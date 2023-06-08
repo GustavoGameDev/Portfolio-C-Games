@@ -1,0 +1,36 @@
+public class PowerUps : MonoBehaviour
+{
+
+    public bool shield;
+    public bool doubleLaser;
+    public bool lifeUpgrade;
+    public int lifeToRecieve;
+
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.CompareTag("Player"))
+        {
+            if (shield == true)
+            {
+                other.gameObject.GetComponent<Life>().ActivateShield();
+            }
+
+            if(doubleLaser == true)
+            {
+                other.gameObject.GetComponent<Player>().dpoubleLaser = false;
+
+                other.gameObject.GetComponent<Player>().currentTimeDoubleLaser = other.gameObject.GetComponent<player>().maxTimeDoubleLaser;
+
+                other.gameObject.GetComponent<Player>().doubleLaser = true; 
+            }
+
+            if (lifeUpgrade == true)
+            {
+                other.gameObject.GetComponent<Life>().RecieveLife(lifeToRecieve);
+            }
+
+            Destroy(this.gameObject);
+        }
+    }
+}
