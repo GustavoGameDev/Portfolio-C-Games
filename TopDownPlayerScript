@@ -1,0 +1,139 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class PlayerMovement : MonoBehaviour
+{
+    
+    public Bullet playerBullet;
+    public Transform localDotiro;
+    public float effectDisplay = 0.1f;
+    public float speed = 6;
+    public AudioClip shootSound;
+    public AudioClip bombSound;
+
+
+    RaycastHit hit;
+    public bool mouseMove = false;
+
+    public Rigidbody bombPrefab;
+    public Vector2 bombImpulse;
+    public Image bombImage;
+    public float bombCoolDown = 10;
+    private float bombTimer;
+    
+    private float timer;
+
+    private Rigidbody rb;
+    private Animator animator;
+    private Vector3 movement;
+    private Vector2 mousePos;
+    private AudioPlayer audioPlayer;
+    private Light gunLight;
+    private ParticleSystem gunEffect;
+    private Level level;
+
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        bombTimer = bombCoolDown;
+        audioPlayer = GetComponent<AudioPlayer>();
+        animator = GetComponent<Animator>();
+        gunLight = GetComponent<Light>();
+        gunEffect = GetComponent<ParticleSystem>();
+    }
+
+     void Start()
+    {
+        level = Manager.instance.levels[Manager.instance.level];
+    }
+    // Update is called once per frame
+    private void FixedUpdate()
+    {
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+        
+        //mouseRot
+
+        if(Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100))
+        {
+            Vector3 playerToMouse = hit.point - transform.position;
+            playerToMouse.y = 0;
+            Quaternion newRotation = Quaternion.LookRotation(playerToMouse);
+            rb.MoveRotation(newRotation);
+        }
+        
+        Move(h, v);
+
+        Bomb();
+
+
+        Shoot();
+
+        Animating(h, v);
+
+        timer += Time.deltaTime;
+
+        bombTimer += Time.deltaTime;
+        bombImage.fillAmount = bombTimer / bombCoolDown;
+
+        if (timer > effectDisplay)
+        {
+            DisableEffects();
+        }
+    }
+
+    void Move(float h, float v)
+    {
+        movement.Set(h, 0, v);
+        movement = movement.normalized * speed * Time.deltaTime;
+
+        rb.MovePosition(transform.position + movement);
+    }
+    
+    
+    public void Bomb()
+    {
+        if (bombTimer >= bombCoolDown && Input.GetButtonDown("Fire2"))
+        {
+            
+            bombTimer = 0;
+            Rigidbody newBomb = Instantiate(bombPrefab, transform.position, Quaternion.identity);
+            newBomb.AddForce(transform.forward * bombImpulse.x, ForceMode.Impulse);
+            newBomb.AddForce(Vector3.up * bombImpulse.y, ForceMode.Impulse);
+        }
+
+      
+    }
+
+    void DisableEffects()
+    {
+        gunLight.enabled = false;
+
+    }
+    
+    void Animating(float hor, float ver)
+    {
+        bool walking = hor != 0 || ver != 0;
+        animator.SetBool("Walking", walking);
+    }
+
+    private void Shoot()
+    {
+        if (timer > level.fireRate && Input.GetButtonDown("Fire1"))
+        {
+            audioPlayer.PlaySound(shootSound);
+            timer = 0;
+            Bullet newBullet = Instantiate(playerBullet, localDotiro.position, localDotiro.rotation);
+            newBullet.damage = level.damage;
+            newBullet.speed = level.bulletSpeed;
+            gunLight.enabled = true;
+
+            gunEffect.Stop();
+            gunEffect.Play();
+        }
+    }
+
+}
